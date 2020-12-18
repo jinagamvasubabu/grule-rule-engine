@@ -6,6 +6,7 @@ import (
 	"github.com/hyperjumptech/grule-rule-engine/pkg"
 	"github.com/sirupsen/logrus"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -25,6 +26,7 @@ func NewWorkingMemory(name, version string) *WorkingMemory {
 
 // WorkingMemory handles states of expression evaluation status
 type WorkingMemory struct {
+	lock                      sync.Mutex
 	Name                      string
 	Version                   string
 	expressionSnapshotMap     map[string]*Expression
@@ -300,6 +302,9 @@ func (e *WorkingMemory) ResetVariable(variable *Variable) bool {
 // ResetAll sets all expression evaluated status to false.
 // Returns true if any expression was reset, false if otherwise
 func (e *WorkingMemory) ResetAll() bool {
+	//To avoid any concurrent map iteration and map write
+	e.lock.Lock()
+	defer e.lock.Unlock()
 	reseted := false
 	for _, expr := range e.expressionSnapshotMap {
 		expr.Evaluated = false
